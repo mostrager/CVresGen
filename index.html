@@ -28,6 +28,9 @@
   <label for="jobDescription">Paste Job Description & Qualifications:</label>
   <textarea id="jobDescription" placeholder="Paste the job description and qualifications here..."></textarea>
 
+  <label for="paragraphs">Relevant Paragraphs (use placeholders like {{SKILLS}} where you want replacements):</label>
+  <textarea id="paragraphs" placeholder="Paste paragraphs with placeholders here..."></textarea>
+
   <label for="pdfTemplate">Upload PDF Template:</label>
   <input type="file" id="pdfTemplate" accept="application/pdf">
 
@@ -38,10 +41,24 @@
   </div>
 
   <script>
+    const defaultSkills = [
+      ".NET", ".NET Core", "3ds Max", "Adobe After Effects", "Adobe Photoshop", "Amazon EC2", "Amazon ECS",
+      "Analysis skills", "Angular", "APIs", "ArcGIS", "ASP.NET Core", "AutoCAD", "AWS", "AWS Lambda", "Azure",
+      "Back-end development", "CAD", "Civil 3D", "Construction", "CSS", "Data collection", "Data management",
+      "Database administration", "Databases", "Docker", "Environmental consulting", "Environmental permitting",
+      "GIS", "Git", "GitHub", "Go", "Google Cloud Platform", "HTML", "Java", "JavaScript", "Kubernetes", "Linux",
+      "MicroStation", "Microsoft Excel", "Microsoft Outlook", "Microsoft Powerpoint", "Microsoft Word",
+      "MySQL", "Node.js", "Oracle", "PostgreSQL", "Python", "React", "Revit", "SQL", "Terraform", "TypeScript",
+      "Vue.js", "Web services", "WebSocket", "XML"
+    ];
+
+    const highPriorityKeywords = ["gis", "environmental", "utilities", "pipelines", "energy"];
+
     async function generateDocuments() {
       const employer = document.getElementById('employer').value.trim() || 'Hiring Manager';
       const position = document.getElementById('position').value.trim() || 'Position';
-      const jobDescription = document.getElementById('jobDescription').value.trim();
+      const jobDescription = document.getElementById('jobDescription').value.trim().toLowerCase();
+      const paragraphsInput = document.getElementById('paragraphs').value.trim();
       const pdfFile = document.getElementById('pdfTemplate').files[0];
 
       if (!pdfFile) {
@@ -49,38 +66,82 @@
         return;
       }
 
+      const prioritizedSkills = prioritizeSkillsBasedOnJob(jobDescription);
+      const formattedSkills = prioritizedSkills.join(', ');
+      const tailoredParagraphs = tailorParagraphs(paragraphsInput, jobDescription, formattedSkills);
+
       const reader = new FileReader();
       reader.onload = async function(e) {
         const pdfData = new Uint8Array(e.target.result);
         const pdfDoc = await PDFLib.PDFDocument.load(pdfData);
-
         const pages = pdfDoc.getPages();
         const date = new Date().toLocaleDateString();
 
         pages.forEach(page => {
           const { width, height } = page.getSize();
-          const textContent = page.getTextContent ? page.getTextContent() : '';
 
-          // Replace placeholders
-          page.drawText(page.getTextContent().items.reduce((acc, item) => {
-            return acc.replace('{{EMPLOYER}}', employer)
-                      .replace('{{POSITION}}', position)
-                      .replace('{{DATE}}', date);
-          }, textContent), {
-            x: 50,
-            y: height - 100,
-            size: 11,
-            font: pdfDoc.getFont('Helvetica'),
-            color: PDFLib.rgb(0, 0, 0),
+          const replacements = {
+            '{{EMPLOYER}}': employer,
+            '{{POSITION}}': position,
+            '{{DATE}}': date,
+            '{{SKILLS}}': formattedSkills,
+            '{{PARAGRAPHS}}': tailoredParagraphs
+          };
+
+          Object.entries(replacements).forEach(([placeholder, value]) => {
+            page.drawText(value, {
+              x: 50,
+              y: height - 100 - (Object.keys(replacements).indexOf(placeholder) * 30),
+              size: 11,
+              font: pdfDoc.getFont('Helvetica'),
+              color: PDFLib.rgb(0, 0, 0),
+            });
           });
         });
 
         const modifiedPdfBytes = await pdfDoc.save();
-        window.generatedPdfBytes = modifiedPdfBytes; // Store for download
+        window.generatedPdfBytes = modifiedPdfBytes;
         alert('PDF generated successfully. Click "Download Customized PDF" to save it.');
       };
 
       reader.readAsArrayBuffer(pdfFile);
+    }
+
+    function prioritizeSkillsBasedOnJob(jobDescription) {
+      const prioritized = defaultSkills.sort((a, b) => {
+        const indexA = jobDescription.indexOf(a.toLowerCase());
+        const indexB = jobDescription.indexOf(b.toLowerCase());
+        const isHighPriorityA = highPriorityKeywords.some(keyword => jobDescription.includes(keyword) && a.toLowerCase().includes(keyword));
+        const isHighPriorityB = highPriorityKeywords.some(keyword => jobDescription.includes(keyword) && b.toLowerCase().includes(keyword));
+
+        if (isHighPriorityA && !isHighPriorityB) return -1;
+        if (!isHighPriorityA && isHighPriorityB) return 1;
+
+        return (indexA === -1 ? Infinity : indexA) - (indexB === -1 ? Infinity : indexB);
+      });
+
+      return prioritized.slice(0, 10); // Limit to top 10 skills
+    }
+
+    function tailorParagraphs(paragraphs, jobDescription, formattedSkills) {
+      let tailoredText = paragraphs;
+      const sentences = tailoredText.split('. ');
+
+      const prioritizedSentences = sentences.sort((a, b) => {
+        const aMatches = countKeywordMatches(a, jobDescription);
+        const bMatches = countKeywordMatches(b, jobDescription);
+        return bMatches - aMatches;
+      });
+
+      tailoredText = prioritizedSentences.join('. ');
+      tailoredText = tailoredText.replace('{{SKILLS}}', formattedSkills);
+
+      return tailoredText;
+    }
+
+    function countKeywordMatches(sentence, jobDescription) {
+      const words = sentence.toLowerCase().split(/\W+/);
+      return words.reduce((count, word) => count + (jobDescription.includes(word) ? 1 : 0), 0);
     }
 
     function downloadGeneratedPDF() {

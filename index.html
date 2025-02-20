@@ -21,7 +21,7 @@
       background-color: var(--background-color);
       color: var(--text-color);
       margin: 20px;
-      max-width: 850px;
+      max-width: 900px;
       padding: 20px;
       border-radius: 10px;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -51,7 +51,7 @@
     }
 
     textarea {
-      height: 130px;
+      height: 120px;
       resize: vertical;
       white-space: pre-wrap;
     }
@@ -77,12 +77,6 @@
     button:hover {
       background-color: var(--button-hover-color);
     }
-
-    input[type="file"] {
-      padding: 5px;
-      background-color: transparent;
-      border: none;
-    }
   </style>
 </head>
 <body>
@@ -97,16 +91,105 @@
   <label for="jobDescription">Paste Job Description & Qualifications:</label>
   <textarea id="jobDescription" placeholder="Paste the job description and qualifications here..."></textarea>
 
-  <label for="pdfTemplate">Upload PDF Template:</label>
-  <input type="file" id="pdfTemplate" accept="application/pdf">
+  <label for="cvTemplate">Upload CV Template (PDF):</label>
+  <input type="file" id="cvTemplate" accept="application/pdf">
+
+  <label for="resumeTemplate">Upload Resume Template (PDF):</label>
+  <input type="file" id="resumeTemplate" accept="application/pdf">
 
   <button onclick="generateDocuments()">Generate CV & Resume</button>
 
   <div class="download-container">
-    <button onclick="downloadGeneratedPDF()">Download Customized PDF</button>
+    <button onclick="downloadGeneratedPDF('cv')">Download Customized CV</button>
+    <button onclick="downloadGeneratedPDF('resume')">Download Customized Resume</button>
   </div>
 
   <script>
+    let generatedCVBytes = null;
+    let generatedResumeBytes = null;
+
+    async function generateDocuments() {
+      const employer = document.getElementById('employer').value.trim() || 'Hiring Manager';
+      const position = document.getElementById('position').value.trim() || 'Position';
+      const jobDescription = document.getElementById('jobDescription').value.trim().toLowerCase();
+
+      const cvFile = document.getElementById('cvTemplate').files[0];
+      const resumeFile = document.getElementById('resumeTemplate').files[0];
+
+      if (!cvFile || !resumeFile) {
+        alert('Please upload both the CV and Resume templates.');
+        return;
+      }
+
+      const prioritizedSkills = prioritizeSkillsBasedOnJob(jobDescription);
+      const formattedSkills = prioritizedSkills.join(', ');
+      const tailoredParagraph = generateTailoredParagraph(jobDescription, position, formattedSkills);
+
+      generatedCVBytes = await processPDF(cvFile, employer, position, formattedSkills, tailoredParagraph);
+      generatedResumeBytes = await processPDF(resumeFile, employer, position, formattedSkills, tailoredParagraph);
+
+      alert('CV and Resume generated successfully. Click the download buttons to save them.');
+    }
+
+    async function processPDF(file, employer, position, formattedSkills, tailoredParagraph) {
+      const reader = new FileReader();
+
+      return new Promise((resolve) => {
+        reader.onload = async function(e) {
+          const pdfData = new Uint8Array(e.target.result);
+          const pdfDoc = await PDFLib.PDFDocument.load(pdfData);
+          const pages = pdfDoc.getPages();
+          const date = new Date().toLocaleDateString();
+
+          const replacements = {
+            '{{EMPLOYER}}': employer,
+            '{{POSITION}}': position,
+            '{{DATE}}': date,
+            '{{SKILLS}}': formattedSkills,
+            '{{PARAGRAPH}}': tailoredParagraph
+          };
+
+          for (const page of pages) {
+            const { width, height } = page.getSize();
+            let yOffset = height - 100;
+
+            Object.values(replacements).forEach((value) => {
+              page.drawText(value, {
+                x: 50,
+                y: yOffset,
+                size: 11,
+                font: pdfDoc.getFont('Helvetica'),
+                color: PDFLib.rgb(0.2, 0.2, 0.2),
+                maxWidth: width - 100,
+                lineHeight: 14
+              });
+              yOffset -= 35;
+            });
+          }
+
+          const modifiedPdfBytes = await pdfDoc.save();
+          resolve(modifiedPdfBytes);
+        };
+
+        reader.readAsArrayBuffer(file);
+      });
+    }
+
+    function downloadGeneratedPDF(type) {
+      const bytes = type === 'cv' ? generatedCVBytes : generatedResumeBytes;
+
+      if (!bytes) {
+        alert(`Please generate the ${type.toUpperCase()} first.`);
+        return;
+      }
+
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `Michael_Ostrager_Customized_${type.toUpperCase()}.pdf`;
+      link.click();
+    }
+
     const defaultSkills = [
       ".NET", ".NET Core", "3ds Max", "Adobe After Effects", "Adobe Photoshop", "Amazon EC2", "Amazon ECS",
       "Analysis skills", "Angular", "APIs", "ArcGIS", "ASP.NET Core", "AutoCAD", "AWS", "AWS Lambda", "Azure",
@@ -120,60 +203,6 @@
 
     const highPriorityKeywords = ["gis", "environmental", "utilities", "pipelines", "energy"];
 
-    async function generateDocuments() {
-      const employer = document.getElementById('employer').value.trim() || 'Hiring Manager';
-      const position = document.getElementById('position').value.trim() || 'Position';
-      const jobDescription = document.getElementById('jobDescription').value.trim().toLowerCase();
-      const pdfFile = document.getElementById('pdfTemplate').files[0];
-
-      if (!pdfFile) {
-        alert('Please upload a PDF template first.');
-        return;
-      }
-
-      const prioritizedSkills = prioritizeSkillsBasedOnJob(jobDescription);
-      const formattedSkills = prioritizedSkills.join(', ');
-      const tailoredParagraph = generateTailoredParagraph(jobDescription, position, formattedSkills);
-
-      const reader = new FileReader();
-      reader.onload = async function(e) {
-        const pdfData = new Uint8Array(e.target.result);
-        const pdfDoc = await PDFLib.PDFDocument.load(pdfData);
-        const pages = pdfDoc.getPages();
-        const date = new Date().toLocaleDateString();
-
-        pages.forEach(page => {
-          const { width, height } = page.getSize();
-
-          const replacements = {
-            '{{EMPLOYER}}': employer,
-            '{{POSITION}}': position,
-            '{{DATE}}': date,
-            '{{SKILLS}}': formattedSkills,
-            '{{PARAGRAPH}}': tailoredParagraph
-          };
-
-          Object.entries(replacements).forEach(([placeholder, value], index) => {
-            page.drawText(value, {
-              x: 50,
-              y: height - 100 - (index * 35),
-              size: 11,
-              font: pdfDoc.getFont('Helvetica'),
-              color: PDFLib.rgb(0.2, 0.2, 0.2),
-              maxWidth: width - 100,
-              lineHeight: 14
-            });
-          });
-        });
-
-        const modifiedPdfBytes = await pdfDoc.save();
-        window.generatedPdfBytes = modifiedPdfBytes;
-        alert('PDF generated successfully. Click "Download Customized PDF" to save it.');
-      };
-
-      reader.readAsArrayBuffer(pdfFile);
-    }
-
     function prioritizeSkillsBasedOnJob(jobDescription) {
       return defaultSkills.sort((a, b) => {
         const indexA = jobDescription.indexOf(a.toLowerCase());
@@ -185,32 +214,17 @@
         if (!isHighPriorityA && isHighPriorityB) return 1;
 
         return (indexA === -1 ? Infinity : indexA) - (indexB === -1 ? Infinity : indexB);
-      }).slice(0, 10); // Top 10 skills
+      }).slice(0, 10);
     }
 
     function generateTailoredParagraph(jobDescription, position, formattedSkills) {
-      let paragraph = `I am applying for the ${position} role with a strong background in software and technology relevant to this position. My experience with ${formattedSkills} enables me to effectively meet the job's technical requirements.`;
-
       if (jobDescription.includes('gis')) {
-        paragraph = `With extensive experience in GIS technologies, I bring expertise in ${formattedSkills}. I am confident that my background aligns perfectly with the requirements of the ${position} role.`;
+        return `With extensive experience in GIS technologies, I bring expertise in ${formattedSkills}. My background aligns perfectly with the requirements of the ${position} role.`;
       } else if (highPriorityKeywords.some(keyword => jobDescription.includes(keyword))) {
-        paragraph = `My work in sectors such as energy and environmental projects has equipped me with strong skills in ${formattedSkills}. I am eager to leverage this experience in the ${position} position.`;
+        return `My work in sectors such as energy and environmental projects has equipped me with strong skills in ${formattedSkills}. I am eager to leverage this experience in the ${position} position.`;
       }
 
-      return paragraph;
-    }
-
-    function downloadGeneratedPDF() {
-      if (!window.generatedPdfBytes) {
-        alert('Please generate the documents first.');
-        return;
-      }
-
-      const blob = new Blob([window.generatedPdfBytes], { type: 'application/pdf' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `Michael_Ostrager_Customized_Document.pdf`;
-      link.click();
+      return `I am applying for the ${position} role with a solid background in software and technology. My experience with ${formattedSkills} enables me to effectively meet the job's technical requirements.`;
     }
   </script>
 </body>

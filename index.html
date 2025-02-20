@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CV & Resume Generator</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; max-width: 800px; }
     h1 { text-align: left; margin-bottom: 20px; }
     label { font-weight: bold; margin-top: 10px; }
     input, textarea, button, select { display: block; width: 100%; margin-top: 5px; }
     input, select { padding: 8px; font-size: 14px; }
-    textarea { height: 180px; resize: vertical; font-size: 14px; white-space: pre-wrap; }
+    textarea { height: 150px; resize: vertical; font-size: 14px; white-space: pre-wrap; }
     .download-container { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
     button { padding: 10px; cursor: pointer; font-size: 14px; }
   </style>
@@ -28,72 +28,72 @@
   <label for="jobDescription">Paste Job Description & Qualifications:</label>
   <textarea id="jobDescription" placeholder="Paste the job description and qualifications here..."></textarea>
 
+  <label for="pdfTemplate">Upload PDF Template:</label>
+  <input type="file" id="pdfTemplate" accept="application/pdf">
+
   <button onclick="generateDocuments()">Generate CV & Resume</button>
 
-  <h2>CV</h2>
-  <textarea id="cvText" placeholder="Generated CV will appear here..."></textarea>
   <div class="download-container">
-    <button onclick="downloadDocument('cv')">Download CV</button>
-    <select id="cvFormat">
-      <option value="pdf" selected>.pdf</option>
-    </select>
-  </div>
-
-  <h2>Resume</h2>
-  <textarea id="resumeText" placeholder="Generated resume will appear here..."></textarea>
-  <div class="download-container">
-    <button onclick="downloadDocument('resume')">Download Resume</button>
-    <select id="resumeFormat">
-      <option value="pdf" selected>.pdf</option>
-    </select>
+    <button onclick="downloadGeneratedPDF()">Download Customized PDF</button>
   </div>
 
   <script>
-    const { jsPDF } = window.jspdf;
-
-    function generateDocuments() {
+    async function generateDocuments() {
       const employer = document.getElementById('employer').value.trim() || 'Hiring Manager';
       const position = document.getElementById('position').value.trim() || 'Position';
-      const jobDescription = document.getElementById('jobDescription').value.trim().toLowerCase();
-      const date = new Date().toLocaleDateString();
+      const jobDescription = document.getElementById('jobDescription').value.trim();
+      const pdfFile = document.getElementById('pdfTemplate').files[0];
 
-      const fieldBiologistKeywords = ['field', 'biology', 'ecology', 'environment', 'wildlife', 'species', 'habitat'];
-      const gisKeywords = ['gis', 'spatial', 'mapping', 'geospatial', 'data', 'analysis'];
-
-      const matchesBiologist = fieldBiologistKeywords.filter(word => jobDescription.includes(word));
-      const matchesGIS = gisKeywords.filter(word => jobDescription.includes(word));
-
-      // Tailored content logic
-      let tailoredCVContent = `With a background in GIS and environmental sciences, I am confident in my ability to excel in the ${position} position.`;
-      let tailoredResumeContent = `MICHAEL OSTRAGER\n\nGIS Specialist | Analyst\nNew York, NY 12866 | 1-(917)-573-1443 | michael.ostrager@gmail.com | LinkedIn\n\nQUALIFICATIONS SUMMARY\nDynamic and results-driven professional with valuable experience in `;
-
-      if (matchesBiologist.length > matchesGIS.length) {
-        tailoredCVContent = `With a B.Sc. in Biology and Ecology and extensive field experience, I am well-suited for the ${position} position. I bring hands-on experience in habitat assessments, species monitoring, and environmental compliance.`;
-        tailoredResumeContent += `field biology, environmental assessments, and ecological research. Specialized in habitat monitoring, species identification, and data collection methods in field settings.`;
-      } else if (matchesGIS.length > 0) {
-        tailoredCVContent = `With extensive experience in GIS, spatial analysis, and environmental compliance, I believe I am highly qualified for the ${position} role. My background includes managing geospatial data for large-scale projects and providing actionable insights through data visualization.`;
-        tailoredResumeContent += `geospatial analysis, GIS data management, and environmental compliance. Skilled in using ArcGIS, QGIS, and other mapping technologies to support project planning and execution.`;
-      } else {
-        tailoredResumeContent += `geospatial and environmental sciences, with a proven track record in project management and data analysis.`;
+      if (!pdfFile) {
+        alert('Please upload a PDF template first.');
+        return;
       }
 
-      tailoredResumeContent += `\n\nCORE COMPETENCIES\n• Spatial Analysis • Data Visualization • Environmental Compliance • Field Data Collection\n• GIS Software Proficiency • Project Management • Habitat Assessments • Species Monitoring\n\nWORK EXPERIENCE\nELOS LLC | Hammond, LA\nGIS Specialist/Environmental Scientist I | Apr 2023 – Dec 2024\n• Managed geospatial data for environmental compliance projects.\n• Conducted habitat assessments and collaborated with cross-functional teams.\n• Developed large-scale environmental maps improving project efficiency.\n\nAir Products and Chemicals Inc | New Orleans, LA\nLead Biological Seismic Monitor | Oct 2022 – Jun 2023\n• Led field teams in biological monitoring and environmental impact mitigation.\n• Liaised with regulatory agencies to ensure compliance with environmental standards.\n\nEDUCATION\nB.Sc. in Biology and Ecology | Tulane University | Aug 2021`;
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        const pdfData = new Uint8Array(e.target.result);
+        const pdfDoc = await PDFLib.PDFDocument.load(pdfData);
 
-      const cvContent = `MICHAEL OSTRAGER\n\nGIS Specialist | Analyst\nNew York, NY 12866 | 1-(917)-573-1443 | michael.ostrager@gmail.com | LinkedIn\n\n${date}\n\n${employer}\n\nDear Hiring Manager,\n\nI am writing to express my interest in the ${position} position at your organization. ${tailoredCVContent}\n\nMy professional journey includes leading geospatial projects, conducting field studies, and ensuring regulatory compliance across various environmental sectors. I am confident that my background aligns with the requirements outlined in the job description.\n\nThank you for considering my application. I look forward to discussing how I can contribute to your team.\n\nSincerely,\nMichael Ostrager`;
+        const pages = pdfDoc.getPages();
+        const date = new Date().toLocaleDateString();
 
-      document.getElementById('cvText').value = cvContent;
-      document.getElementById('resumeText').value = tailoredResumeContent;
+        pages.forEach(page => {
+          const { width, height } = page.getSize();
+          const textContent = page.getTextContent ? page.getTextContent() : '';
+
+          // Replace placeholders
+          page.drawText(page.getTextContent().items.reduce((acc, item) => {
+            return acc.replace('{{EMPLOYER}}', employer)
+                      .replace('{{POSITION}}', position)
+                      .replace('{{DATE}}', date);
+          }, textContent), {
+            x: 50,
+            y: height - 100,
+            size: 11,
+            font: pdfDoc.getFont('Helvetica'),
+            color: PDFLib.rgb(0, 0, 0),
+          });
+        });
+
+        const modifiedPdfBytes = await pdfDoc.save();
+        window.generatedPdfBytes = modifiedPdfBytes; // Store for download
+        alert('PDF generated successfully. Click "Download Customized PDF" to save it.');
+      };
+
+      reader.readAsArrayBuffer(pdfFile);
     }
 
-    function downloadDocument(type) {
-      const text = type === 'cv' ? document.getElementById('cvText').value : document.getElementById('resumeText').value;
-      const format = document.getElementById(type === 'cv' ? 'cvFormat' : 'resumeFormat').value;
+    function downloadGeneratedPDF() {
+      if (!window.generatedPdfBytes) {
+        alert('Please generate the documents first.');
+        return;
+      }
 
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'in', format: 'letter' });
-      doc.setFontSize(11);
-      const lines = doc.splitTextToSize(text, 7.5);
-      doc.text(lines, 1, 1);
-      doc.save(`Michael_Ostrager_${type === 'cv' ? 'CV' : 'Resume'}.${format}`);
+      const blob = new Blob([window.generatedPdfBytes], { type: 'application/pdf' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `Michael_Ostrager_Customized_Document.pdf`;
+      link.click();
     }
   </script>
 </body>

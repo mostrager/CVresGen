@@ -1,4 +1,3 @@
----
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,9 +6,11 @@
   <title>Resume & Cover Letter Generator</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; max-width: 800px; }
-    label, input, button { display: block; margin: 10px 0; width: 100%; }
+    label, input, button, select { display: block; margin: 10px 0; width: 100%; }
     textarea { width: 100%; height: 300px; margin-top: 10px; }
+    .download-container { display: flex; align-items: center; gap: 10px; }
     button { padding: 10px; cursor: pointer; }
+    select { padding: 8px; }
   </style>
 </head>
 <body>
@@ -22,15 +23,24 @@
 
   <button onclick="generateDocuments()">Generate Cover Letter</button>
 
-  <h2>Resume </h2>
+  <h2>Resume (Static)</h2>
   <a href="Michael_Ostrager_Resume.pdf" download>Download Resume</a>
 
   <h2>Cover Letter</h2>
   <textarea id="coverLetterText" readonly></textarea>
-  <button onclick="downloadFile()">Download Cover Letter</button>
+  <div class="download-container">
+    <button onclick="downloadFile()">Download Cover Letter</button>
+    <select id="fileFormat">
+      <option value="docx" selected>.docx</option>
+      <option value="pdf">.pdf</option>
+      <option value="jpg">.jpg</option>
+      <option value="jpeg">.jpeg</option>
+      <option value="doc">.doc</option>
+    </select>
+  </div>
 
   <script>
-    const coverLetterTemplate = `MICHAEL OSTRAGER\n\nGIS Specialist | Analyst\nNew York, NY 12866 | 1-(917)-573-1443 | michael.ostrager@gmail.com | LinkedIn\n\n{{date}}\n\n{{employer}},\n\nDear Hiring Team,\n\nAs a focused professional, I possess progressive experience in spatial analysis, geospatial data management, environmental compliance, technical project management, and risk analysis and mitigation. I have a proven record of leading the management of complex data sets to support environmental permitting and infrastructure projects. After reading your requirements for the {{position}} position, I am confident in my abilities and experiences to excel in this capacity.\n\nAs a GIS Specialist/Environmental Scientist, I oversaw the administration of geospatial databases, improving field data collection, processing, and visualization for major environmental and building permits. I am skilled at creating crucial geospatial engineering reports and working with the US Army Corps of Engineers to ensure project submissions fulfill strict regulatory requirements. This experience has sharpened my ability to manage complicated datasets and apply GIS technologies to support environmental mitigation and industrial initiatives.\n\nThank you for your time and consideration. I am confident that my talents and expertise align with the requirements of this position, and I look forward to exploring how I can contribute to your organization.\n\nSincerely,\nMichael Ostrager`;
+    const coverLetterTemplate = `MICHAEL OSTRAGER\n\nGIS Specialist | Analyst\nNew York, NY 12866 | 1-(917)-573-1443 | michael.ostrager@gmail.com | LinkedIn\n\n{{date}}\n\n{{employer}},\n\nDear Hiring Manager,\n\nAs a focused professional, I possess progressive experience in spatial analysis, geospatial data management, environmental compliance, technical project management, and risk analysis and mitigation. I have a proven record of leading the management of complex data sets to support environmental permitting and infrastructure projects. After reading your requirements for the {{position}} position, I am confident in my abilities and experiences to excel in this capacity.\n\nAs a GIS Specialist/Environmental Scientist, I oversaw the administration of geospatial databases, improving field data collection, processing, and visualization for major environmental and building permits. I am skilled at creating crucial geospatial engineering reports and working with the US Army Corps of Engineers to ensure project submissions fulfill strict regulatory requirements. This experience has sharpened my ability to manage complicated datasets and apply GIS technologies to support environmental mitigation and industrial initiatives.\n\nThank you for your time and consideration. I am confident that my talents and expertise align with the requirements of this position, and I look forward to exploring how I can contribute to your organization.\n\nSincerely,\nMichael Ostrager`;
 
     function generateDocuments() {
       const employer = document.getElementById('employer').value || 'Hiring Manager';
@@ -47,14 +57,31 @@
 
     function downloadFile() {
       const text = document.getElementById('coverLetterText').value;
-      const blob = new Blob([text], { type: 'text/plain' });
+      const format = document.getElementById('fileFormat').value;
+      let blob, mimeType, extension;
+
+      switch (format) {
+        case 'pdf':
+          alert('PDF conversion requires backend processing or a library like jsPDF.');
+          return;
+        case 'jpg':
+        case 'jpeg':
+          alert('Image conversion requires a canvas rendering process and is beyond static HTML capability.');
+          return;
+        case 'doc':
+        case 'docx':
+        default:
+          mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+          extension = format;
+          blob = new Blob([text], { type: mimeType });
+          break;
+      }
+
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = 'Michael_Ostrager_Cover_Letter.txt';
+      link.download = `Michael_Ostrager_Cover_Letter.${extension}`;
       link.click();
     }
   </script>
 </body>
 </html>
-
----

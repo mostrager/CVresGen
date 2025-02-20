@@ -1,3 +1,4 @@
+---
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,7 +22,7 @@
 
   <button onclick="generateDocuments()">Generate Cover Letter</button>
 
-  <h2>Resume (Static)</h2>
+  <h2>Resume </h2>
   <a href="Michael_Ostrager_Resume.pdf" download>Download Resume</a>
 
   <h2>Cover Letter</h2>
@@ -29,7 +30,7 @@
   <button onclick="downloadFile()">Download Cover Letter</button>
 
   <script>
-    const coverLetterTemplate = `MICHAEL OSTRAGER\n\nGIS Specialist | Analyst\nNew York, NY 12866 | 1-(917)-573-1443 | michael.ostrager@gmail.com | LinkedIn\n\n{{date}}\n\n{{employer}},\n\nDear Hiring Manager,\n\nAs a focused professional, I possess progressive experience in spatial analysis, geospatial data management, environmental compliance, technical project management, and risk analysis and mitigation. I have a proven record of leading the management of complex data sets to support environmental permitting and infrastructure projects. After reading your requirements for the {{position}} position, I am confident in my abilities and experiences to excel in this capacity.\n\nAs a GIS Specialist/Environmental Scientist, I oversaw the administration of geospatial databases, improving field data collection, processing, and visualization for major environmental and building permits. I am skilled at creating crucial geospatial engineering reports and working with the US Army Corps of Engineers to ensure project submissions fulfill strict regulatory requirements. This experience has sharpened my ability to manage complicated datasets and apply GIS technologies to support environmental mitigation and industrial initiatives.\n\nThank you for your time and consideration. I am confident that my talents and expertise align with the requirements of this position, and I look forward to exploring how I can contribute to your organization.\n\nSincerely,\nMichael Ostrager`;
+    const coverLetterTemplate = `MICHAEL OSTRAGER\n\nGIS Specialist | Analyst\nNew York, NY 12866 | 1-(917)-573-1443 | michael.ostrager@gmail.com | LinkedIn\n\n{{date}}\n\n{{employer}},\n\nDear Hiring Team,\n\nAs a focused professional, I possess progressive experience in spatial analysis, geospatial data management, environmental compliance, technical project management, and risk analysis and mitigation. I have a proven record of leading the management of complex data sets to support environmental permitting and infrastructure projects. After reading your requirements for the {{position}} position, I am confident in my abilities and experiences to excel in this capacity.\n\nAs a GIS Specialist/Environmental Scientist, I oversaw the administration of geospatial databases, improving field data collection, processing, and visualization for major environmental and building permits. I am skilled at creating crucial geospatial engineering reports and working with the US Army Corps of Engineers to ensure project submissions fulfill strict regulatory requirements. This experience has sharpened my ability to manage complicated datasets and apply GIS technologies to support environmental mitigation and industrial initiatives.\n\nThank you for your time and consideration. I am confident that my talents and expertise align with the requirements of this position, and I look forward to exploring how I can contribute to your organization.\n\nSincerely,\nMichael Ostrager`;
 
     function generateDocuments() {
       const employer = document.getElementById('employer').value || 'Hiring Manager';
@@ -55,3 +56,5 @@
   </script>
 </body>
 </html>
+
+---

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resume & Cover Letter Generator</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; max-width: 800px; }
+    label, input, button { display: block; margin: 10px 0; width: 100%; }
+    textarea { width: 100%; height: 300px; margin-top: 10px; }
+    button { padding: 10px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Resume & Cover Letter Generator</h1>
+  <label for="employer">Employer's Name:</label>
+  <input type="text" id="employer" placeholder="Enter employer's name">
+
+  <label for="position">Position Title:</label>
+  <input type="text" id="position" placeholder="Enter position title">
+
+  <button onclick="generateDocuments()">Generate Cover Letter</button>
+
+  <h2>Resume (Static)</h2>
+  <a href="Michael_Ostrager_Resume.pdf" download>Download Resume</a>
+
+  <h2>Cover Letter</h2>
+  <textarea id="coverLetterText" readonly></textarea>
+  <button onclick="downloadFile()">Download Cover Letter</button>
+
+  <script>
+    const coverLetterTemplate = `MICHAEL OSTRAGER\n\nGIS Specialist | Analyst\nNew York, NY 12866 | 1-(917)-573-1443 | michael.ostrager@gmail.com | LinkedIn\n\n{{date}}\n\n{{employer}},\n\nDear Hiring Manager,\n\nAs a focused professional, I possess progressive experience in spatial analysis, geospatial data management, environmental compliance, technical project management, and risk analysis and mitigation. I have a proven record of leading the management of complex data sets to support environmental permitting and infrastructure projects. After reading your requirements for the {{position}} position, I am confident in my abilities and experiences to excel in this capacity.\n\nAs a GIS Specialist/Environmental Scientist, I oversaw the administration of geospatial databases, improving field data collection, processing, and visualization for major environmental and building permits. I am skilled at creating crucial geospatial engineering reports and working with the US Army Corps of Engineers to ensure project submissions fulfill strict regulatory requirements. This experience has sharpened my ability to manage complicated datasets and apply GIS technologies to support environmental mitigation and industrial initiatives.\n\nThank you for your time and consideration. I am confident that my talents and expertise align with the requirements of this position, and I look forward to exploring how I can contribute to your organization.\n\nSincerely,\nMichael Ostrager`;
+
+    function generateDocuments() {
+      const employer = document.getElementById('employer').value || 'Hiring Manager';
+      const position = document.getElementById('position').value || 'Position';
+      const date = new Date().toLocaleDateString();
+
+      const coverLetter = coverLetterTemplate
+        .replace(/{{employer}}/g, employer)
+        .replace(/{{position}}/g, position)
+        .replace(/{{date}}/g, date);
+
+      document.getElementById('coverLetterText').value = coverLetter;
+    }
+
+    function downloadFile() {
+      const text = document.getElementById('coverLetterText').value;
+      const blob = new Blob([text], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'Michael_Ostrager_Cover_Letter.txt';
+      link.click();
+    }
+  </script>
+</body>
+</html>

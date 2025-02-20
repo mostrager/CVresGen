@@ -7,12 +7,13 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; max-width: 800px; }
-    label, input, textarea, button, select { display: block; margin: 10px 0; width: 100%; }
-    textarea { width: 100%; height: 400px; margin-top: 10px; white-space: pre-wrap; resize: vertical; }
+    h1 { text-align: left; margin-bottom: 20px; }
+    label { font-weight: bold; margin-top: 10px; }
+    input, textarea, button, select { display: block; width: 100%; margin-top: 5px; }
+    input, select { padding: 8px; font-size: 14px; }
+    textarea { height: 180px; resize: vertical; font-size: 14px; white-space: pre-wrap; }
     .download-container { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
-    button { padding: 10px; cursor: pointer; }
-    select { padding: 8px; }
-    h1 { text-align: center; }
+    button { padding: 10px; cursor: pointer; font-size: 14px; }
   </style>
 </head>
 <body>
@@ -27,10 +28,10 @@
   <label for="jobDescription">Paste Job Description & Qualifications:</label>
   <textarea id="jobDescription" placeholder="Paste the job description and qualifications here..."></textarea>
 
-  <button onclick="generateCV()">Generate CV</button>
+  <button onclick="generateDocuments()">Generate CV & Resume</button>
 
   <h2>CV</h2>
-  <textarea id="cvText"></textarea>
+  <textarea id="cvText" placeholder="Generated CV will appear here..."></textarea>
   <div class="download-container">
     <button onclick="downloadDocument('cv')">Download CV</button>
     <select id="cvFormat">
@@ -39,41 +40,7 @@
   </div>
 
   <h2>Resume</h2>
-  <textarea id="resumeText">
-MICHAEL OSTRAGER
-
-GIS Specialist | Analyst  
-New York, NY 12866 | 1-(917)-573-1443 | michael.ostrager@gmail.com | [LinkedIn](https://www.linkedin.com/in/mike-ostrager)  
-
-QUALIFICATIONS SUMMARY  
-“Proven record of managing geospatial projects from start to finish and conducting spatial analysis to address ecological issues and improve project outcomes.”  
-Dynamic and results-driven professional with valuable experience in overseeing spatial analysis and geographic data management. Skilled in GIS software, environmental compliance, and data visualization. Committed to delivering actionable insights for project success.
-
-CORE COMPETENCIES  
-• Spatial Analysis • Data Visualization • Project Management • Environmental Compliance  
-• GIS Software Proficiency • Cross-Functional Collaboration • Environmental Mitigation
-
-TECHNICAL PROFICIENCIES  
-GIS: ArcGIS Pro | QGIS | PostGIS | AWS EC2 | AWS S3  
-Programming: Python | HTML | Java  
-CAD: AutoCAD | SolidWorks  
-Certifications: FAA Part 107 | EMT-Basic  
-
-WORK EXPERIENCE  
-ELOS LLC | Hammond, LA  
-GIS Specialist/Environmental Scientist I | Apr 2023 – Dec 2024  
-• Developed geospatial reports supporting industrial projects and environmental mitigation.  
-• Improved field data collection and visualization for permits.  
-• Led the creation of large-scale environmental map series.  
-
-Air Products and Chemicals Inc | New Orleans, LA  
-Lead Biological Seismic Monitor | Oct 2022 – Jun 2023  
-• Directed seismic survey operations in wetland ecosystems.  
-• Reduced environmental impacts through best practice implementation.  
-
-EDUCATION  
-B.Sc. in Biology and Ecology | Tulane University | Aug 2021  
-  </textarea>
+  <textarea id="resumeText" placeholder="Generated resume will appear here..."></textarea>
   <div class="download-container">
     <button onclick="downloadDocument('resume')">Download Resume</button>
     <select id="resumeFormat">
@@ -84,32 +51,46 @@ B.Sc. in Biology and Ecology | Tulane University | Aug 2021
   <script>
     const { jsPDF } = window.jspdf;
 
-    function generateCV() {
+    function generateDocuments() {
       const employer = document.getElementById('employer').value.trim() || 'Hiring Manager';
       const position = document.getElementById('position').value.trim() || 'Position';
-      const jobDescription = document.getElementById('jobDescription').value.trim();
+      const jobDescription = document.getElementById('jobDescription').value.trim().toLowerCase();
       const date = new Date().toLocaleDateString();
 
-      let skillsMatch = '';
-      if (jobDescription) {
-        const keywords = ['GIS', 'spatial', 'environment', 'data', 'analysis', 'project', 'management', 'compliance', 'visualization'];
-        const matches = keywords.filter(word => jobDescription.toLowerCase().includes(word.toLowerCase()));
-        if (matches.length) {
-          skillsMatch = `I noticed the job description emphasizes ${matches.join(", ")}, which aligns well with my background.`;
-        }
+      const fieldBiologistKeywords = ['field', 'biology', 'ecology', 'environment', 'wildlife', 'species', 'habitat'];
+      const gisKeywords = ['gis', 'spatial', 'mapping', 'geospatial', 'data', 'analysis'];
+
+      const matchesBiologist = fieldBiologistKeywords.filter(word => jobDescription.includes(word));
+      const matchesGIS = gisKeywords.filter(word => jobDescription.includes(word));
+
+      // Tailored content logic
+      let tailoredCVContent = `With a background in GIS and environmental sciences, I am confident in my ability to excel in the ${position} position.`;
+      let tailoredResumeContent = `MICHAEL OSTRAGER\n\nGIS Specialist | Analyst\nNew York, NY 12866 | 1-(917)-573-1443 | michael.ostrager@gmail.com | LinkedIn\n\nQUALIFICATIONS SUMMARY\nDynamic and results-driven professional with valuable experience in `;
+
+      if (matchesBiologist.length > matchesGIS.length) {
+        tailoredCVContent = `With a B.Sc. in Biology and Ecology and extensive field experience, I am well-suited for the ${position} position. I bring hands-on experience in habitat assessments, species monitoring, and environmental compliance.`;
+        tailoredResumeContent += `field biology, environmental assessments, and ecological research. Specialized in habitat monitoring, species identification, and data collection methods in field settings.`;
+      } else if (matchesGIS.length > 0) {
+        tailoredCVContent = `With extensive experience in GIS, spatial analysis, and environmental compliance, I believe I am highly qualified for the ${position} role. My background includes managing geospatial data for large-scale projects and providing actionable insights through data visualization.`;
+        tailoredResumeContent += `geospatial analysis, GIS data management, and environmental compliance. Skilled in using ArcGIS, QGIS, and other mapping technologies to support project planning and execution.`;
+      } else {
+        tailoredResumeContent += `geospatial and environmental sciences, with a proven track record in project management and data analysis.`;
       }
 
-      const cvContent = `MICHAEL OSTRAGER\n\nGIS Specialist | Analyst\nNew York, NY 12866 | 1-(917)-573-1443 | michael.ostrager@gmail.com | LinkedIn\n\n${date}\n\n${employer}\n\nDear Hiring Manager,\n\nI am writing to express my interest in the ${position} position at your organization. With extensive experience in GIS, environmental compliance, and data analysis, I believe I am well-suited for this role. ${skillsMatch}\n\nI have successfully led various projects requiring advanced geospatial analysis and collaborative teamwork. My expertise includes creating comprehensive geospatial reports, managing complex datasets, and ensuring adherence to environmental standards.\n\nThank you for considering my application. I look forward to the possibility of discussing how my skills can benefit your team.\n\nSincerely,\nMichael Ostrager`;
+      tailoredResumeContent += `\n\nCORE COMPETENCIES\n• Spatial Analysis • Data Visualization • Environmental Compliance • Field Data Collection\n• GIS Software Proficiency • Project Management • Habitat Assessments • Species Monitoring\n\nWORK EXPERIENCE\nELOS LLC | Hammond, LA\nGIS Specialist/Environmental Scientist I | Apr 2023 – Dec 2024\n• Managed geospatial data for environmental compliance projects.\n• Conducted habitat assessments and collaborated with cross-functional teams.\n• Developed large-scale environmental maps improving project efficiency.\n\nAir Products and Chemicals Inc | New Orleans, LA\nLead Biological Seismic Monitor | Oct 2022 – Jun 2023\n• Led field teams in biological monitoring and environmental impact mitigation.\n• Liaised with regulatory agencies to ensure compliance with environmental standards.\n\nEDUCATION\nB.Sc. in Biology and Ecology | Tulane University | Aug 2021`;
+
+      const cvContent = `MICHAEL OSTRAGER\n\nGIS Specialist | Analyst\nNew York, NY 12866 | 1-(917)-573-1443 | michael.ostrager@gmail.com | LinkedIn\n\n${date}\n\n${employer}\n\nDear Hiring Manager,\n\nI am writing to express my interest in the ${position} position at your organization. ${tailoredCVContent}\n\nMy professional journey includes leading geospatial projects, conducting field studies, and ensuring regulatory compliance across various environmental sectors. I am confident that my background aligns with the requirements outlined in the job description.\n\nThank you for considering my application. I look forward to discussing how I can contribute to your team.\n\nSincerely,\nMichael Ostrager`;
 
       document.getElementById('cvText').value = cvContent;
+      document.getElementById('resumeText').value = tailoredResumeContent;
     }
 
     function downloadDocument(type) {
       const text = type === 'cv' ? document.getElementById('cvText').value : document.getElementById('resumeText').value;
       const format = document.getElementById(type === 'cv' ? 'cvFormat' : 'resumeFormat').value;
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'in', format: 'letter' });
 
-      doc.setFontSize(12);
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'in', format: 'letter' });
+      doc.setFontSize(11);
       const lines = doc.splitTextToSize(text, 7.5);
       doc.text(lines, 1, 1);
       doc.save(`Michael_Ostrager_${type === 'cv' ? 'CV' : 'Resume'}.${format}`);

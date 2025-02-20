@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Resume & Cover Letter Generator</title>
+  <title>CV & Resume Generator</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; max-width: 800px; }
@@ -15,20 +15,35 @@
   </style>
 </head>
 <body>
-  <h1>Resume & Cover Letter Generator</h1>
+  <h1>CV & Resume Generator</h1>
+
   <label for="employer">Employer's Name:</label>
   <input type="text" id="employer" placeholder="Enter employer's name">
 
   <label for="position">Position Title:</label>
   <input type="text" id="position" placeholder="Enter position title">
 
-  <button onclick="generateDocuments()">Generate Cover Letter</button>
+  <button onclick="generateDocuments()">Generate CV</button>
 
-  <h2>Resume (Editable)</h2>
-  <textarea id="resumeText">MICHAEL OSTRAGER
+  <h2>CV</h2>
+  <textarea id="coverLetterText" readonly></textarea>
+  <div class="download-container">
+    <button onclick="downloadFile()">Download CV</button>
+    <select id="fileFormatCV">
+      <option value="docx" selected>.docx</option>
+      <option value="pdf">.pdf</option>
+      <option value="jpg">.jpg</option>
+      <option value="jpeg">.jpeg</option>
+      <option value="doc">.doc</option>
+    </select>
+  </div>
 
-GIS Specialist | Analyst
-New York, NY 12866 | 1-(917)-573-1443 | michael.ostrager@gmail.com | <a href="https://www.linkedin.com/in/mike-ostrager" target="_blank">LinkedIn</a>
+  <h2>Resume</h2>
+  <textarea id="resumeText">
+MICHAEL OSTRAGER
+
+GIS Specialist | Analyst  
+New York, NY 12866 | 1-(917)-573-1443 | michael.ostrager@gmail.com | [LinkedIn](https://www.linkedin.com/in/mike-ostrager)  
 
 QUALIFICATIONS SUMMARY  
 “Proven record of managing geospatial projects from start to finish and conducting spatial analysis to address ecological issues and improve project outcomes.”  
@@ -64,7 +79,7 @@ WORK EXPERIENCE
 ELOS LLC | Hammond, LA  
 GIS Specialist/Environmental Scientist I, Apr 2023 – Dec 2024  
 • Developed critical geospatial engineering reports to support industrial projects and environmental mitigation activities.  
-• Improved field data collection, processing, and visualization for environmental and construction permits.  
+• Improved field data collection, processing, and visualization for essential environmental and construction permits.  
 • Produced a large-scale map series (500-1000 maps) for environmental initiatives.  
 • Employed AutoCAD to design structural cross-sections and improved project management efficiency.  
 • Conducted thorough land title searches to ensure contract compliance.  
@@ -82,18 +97,10 @@ Farm Hand, 2016 - 2018
 EDUCATION  
 Bachelor of Science in Biology and Ecology  
 Tulane University School of Science and Engineering, New Orleans, LA (Jul 2017 – Aug 2021)  
-</textarea>
+  </textarea>
   <div class="download-container">
-    <a id="downloadResumeLink" onclick="downloadResume()" style="text-decoration: none;">
-      <button>Download Resume</button>
-    </a>
-  </div>
-
-  <h2>Cover Letter</h2>
-  <textarea id="coverLetterText" readonly></textarea>
-  <div class="download-container">
-    <button onclick="downloadFile()">Download CV</button>
-    <select id="fileFormat">
+    <button onclick="downloadResume()">Download Resume</button>
+    <select id="fileFormatResume">
       <option value="docx" selected>.docx</option>
       <option value="pdf">.pdf</option>
       <option value="jpg">.jpg</option>
@@ -122,38 +129,33 @@ Tulane University School of Science and Engineering, New Orleans, LA (Jul 2017 �
 
     function downloadFile() {
       const text = document.getElementById('coverLetterText').value;
-      const format = document.getElementById('fileFormat').value;
-
-      if (format === 'pdf') {
-        const doc = new jsPDF();
-        const lines = doc.splitTextToSize(text, 180);
-        doc.text(lines, 10, 10);
-        doc.save('Michael_Ostrager_Cover_Letter.pdf');
-      } else {
-        let mimeType;
-        switch (format) {
-          case 'doc':
-          case 'docx':
-            mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-            break;
-          default:
-            mimeType = 'text/plain';
-        }
-        const blob = new Blob([text], { type: mimeType });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `Michael_Ostrager_Cover_Letter.${format}`;
-        link.click();
-      }
+      const format = document.getElementById('fileFormatCV').value;
+      generateDownload(text, format, 'Michael_Ostrager_CV');
     }
 
     function downloadResume() {
       const resumeText = document.getElementById('resumeText').value;
-      const blob = new Blob([resumeText], { type: 'text/plain' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'Michael_Ostrager_Resume.txt';
-      link.click();
+      const format = document.getElementById('fileFormatResume').value;
+      generateDownload(resumeText, format, 'Michael_Ostrager_Resume');
+    }
+
+    function generateDownload(text, format, filename) {
+      if (format === 'pdf') {
+        const doc = new jsPDF();
+        const lines = doc.splitTextToSize(text, 180);
+        doc.text(lines, 10, 10);
+        doc.save(`${filename}.pdf`);
+      } else {
+        let mimeType = (format === 'doc' || format === 'docx') 
+          ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
+          : 'text/plain';
+
+        const blob = new Blob([text], { type: mimeType });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `${filename}.${format}`;
+        link.click();
+      }
     }
   </script>
 </body>

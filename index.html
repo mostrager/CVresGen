@@ -20,7 +20,7 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: var(--background-color);
       color: var(--text-color);
-      margin: 20px;
+      margin: 20px auto;
       max-width: 900px;
       padding: 20px;
       border-radius: 10px;
@@ -58,8 +58,7 @@
 
     .download-container {
       display: flex;
-      align-items: center;
-      gap: 10px;
+      justify-content: space-between;
       margin-top: 20px;
     }
 
@@ -72,6 +71,7 @@
       border-radius: 6px;
       cursor: pointer;
       transition: background-color 0.3s ease;
+      width: 48%;
     }
 
     button:hover {
@@ -83,25 +83,25 @@
   <h1>CV & Resume Generator</h1>
 
   <label for="employer">Employer's Name:</label>
-  <input type="text" id="employer" placeholder="Enter employer's name">
+  <input type="text" id="employer" placeholder="Enter employer's name" required>
 
   <label for="position">Position Title:</label>
-  <input type="text" id="position" placeholder="Enter position title">
+  <input type="text" id="position" placeholder="Enter position title" required>
 
   <label for="jobDescription">Paste Job Description & Qualifications:</label>
-  <textarea id="jobDescription" placeholder="Paste the job description and qualifications here..."></textarea>
+  <textarea id="jobDescription" placeholder="Paste the job description and qualifications here..." required></textarea>
 
   <label for="cvTemplate">Upload CV Template (PDF):</label>
-  <input type="file" id="cvTemplate" accept="application/pdf">
+  <input type="file" id="cvTemplate" accept="application/pdf" required>
 
   <label for="resumeTemplate">Upload Resume Template (PDF):</label>
-  <input type="file" id="resumeTemplate" accept="application/pdf">
+  <input type="file" id="resumeTemplate" accept="application/pdf" required>
 
   <button onclick="generateDocuments()">Generate CV & Resume</button>
 
   <div class="download-container">
-    <button onclick="downloadGeneratedPDF('cv')">Download Customized CV</button>
-    <button onclick="downloadGeneratedPDF('resume')">Download Customized Resume</button>
+    <button id="downloadCvBtn" onclick="downloadGeneratedPDF('cv')" disabled>Download Customized CV</button>
+    <button id="downloadResumeBtn" onclick="downloadGeneratedPDF('resume')" disabled>Download Customized Resume</button>
   </div>
 
   <script>
@@ -109,75 +109,75 @@
     let generatedResumeBytes = null;
 
     async function generateDocuments() {
-      const employer = document.getElementById('employer').value.trim() || 'Hiring Manager';
-      const position = document.getElementById('position').value.trim() || 'Position';
-      const jobDescription = document.getElementById('jobDescription').value.trim().toLowerCase();
+      try {
+        const employer = document.getElementById('employer').value.trim();
+        const position = document.getElementById('position').value.trim();
+        const jobDescription = document.getElementById('jobDescription').value.trim().toLowerCase();
 
-      const cvFile = document.getElementById('cvTemplate').files[0];
-      const resumeFile = document.getElementById('resumeTemplate').files[0];
+        const cvFile = document.getElementById('cvTemplate').files[0];
+        const resumeFile = document.getElementById('resumeTemplate').files[0];
 
-      if (!cvFile || !resumeFile) {
-        alert('Please upload both the CV and Resume templates.');
-        return;
+        if (!employer || !position || !jobDescription || !cvFile || !resumeFile) {
+          alert('Please fill in all fields and upload both PDF templates.');
+          return;
+        }
+
+        const prioritizedSkills = prioritizeSkillsBasedOnJob(jobDescription);
+        const formattedSkills = prioritizedSkills.join(', ');
+        const tailoredParagraph = generateTailoredParagraph(jobDescription, position, formattedSkills);
+
+        generatedCVBytes = await processPDF(cvFile, { employer, position, formattedSkills, tailoredParagraph });
+        generatedResumeBytes = await processPDF(resumeFile, { employer, position, formattedSkills, tailoredParagraph });
+
+        document.getElementById('downloadCvBtn').disabled = false;
+        document.getElementById('downloadResumeBtn').disabled = false;
+
+        alert('CV and Resume generated successfully. Click the download buttons to save them.');
+      } catch (error) {
+        console.error('Error generating documents:', error);
+        alert(`An error occurred: ${error.message}`);
       }
-
-      const prioritizedSkills = prioritizeSkillsBasedOnJob(jobDescription);
-      const formattedSkills = prioritizedSkills.join(', ');
-      const tailoredParagraph = generateTailoredParagraph(jobDescription, position, formattedSkills);
-
-      generatedCVBytes = await processPDF(cvFile, employer, position, formattedSkills, tailoredParagraph);
-      generatedResumeBytes = await processPDF(resumeFile, employer, position, formattedSkills, tailoredParagraph);
-
-      alert('CV and Resume generated successfully. Click the download buttons to save them.');
     }
 
-    async function processPDF(file, employer, position, formattedSkills, tailoredParagraph) {
-      const reader = new FileReader();
+    async function processPDF(file, { employer, position, formattedSkills, tailoredParagraph }) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+      const pages = pdfDoc.getPages();
+      const date = new Date().toLocaleDateString();
 
-      return new Promise((resolve) => {
-        reader.onload = async function(e) {
-          const pdfData = new Uint8Array(e.target.result);
-          const pdfDoc = await PDFLib.PDFDocument.load(pdfData);
-          const pages = pdfDoc.getPages();
-          const date = new Date().toLocaleDateString();
+      const replacements = {
+        '{{EMPLOYER}}': employer,
+        '{{POSITION}}': position,
+        '{{DATE}}': date,
+        '{{SKILLS}}': formattedSkills,
+        '{{PARAGRAPH}}': tailoredParagraph
+      };
 
-          const replacements = {
-            '{{EMPLOYER}}': employer,
-            '{{POSITION}}': position,
-            '{{DATE}}': date,
-            '{{SKILLS}}': formattedSkills,
-            '{{PARAGRAPH}}': tailoredParagraph
-          };
+      for (const page of pages) {
+        const { width, height } = page.getSize();
+        let yOffset = height - 80;
 
-          for (const page of pages) {
-            const { width, height } = page.getSize();
-            let yOffset = height - 100;
-
-            Object.values(replacements).forEach((value) => {
-              page.drawText(value, {
-                x: 50,
-                y: yOffset,
-                size: 11,
-                font: pdfDoc.getFont('Helvetica'),
-                color: PDFLib.rgb(0.2, 0.2, 0.2),
-                maxWidth: width - 100,
-                lineHeight: 14
-              });
-              yOffset -= 35;
+        for (const [placeholder, value] of Object.entries(replacements)) {
+          if (value) {
+            page.drawText(value, {
+              x: 50,
+              y: yOffset,
+              size: 11,
+              font: await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica),
+              color: PDFLib.rgb(0.2, 0.2, 0.2),
+              maxWidth: width - 100,
+              lineHeight: 14
             });
+            yOffset -= 40;
           }
+        }
+      }
 
-          const modifiedPdfBytes = await pdfDoc.save();
-          resolve(modifiedPdfBytes);
-        };
-
-        reader.readAsArrayBuffer(file);
-      });
+      return await pdfDoc.save();
     }
 
     function downloadGeneratedPDF(type) {
       const bytes = type === 'cv' ? generatedCVBytes : generatedResumeBytes;
-
       if (!bytes) {
         alert(`Please generate the ${type.toUpperCase()} first.`);
         return;
@@ -186,45 +186,36 @@
       const blob = new Blob([bytes], { type: 'application/pdf' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `Michael_Ostrager_Customized_${type.toUpperCase()}.pdf`;
+      link.download = `Michael_Ostrager_${type.toUpperCase()}.pdf`;
       link.click();
     }
 
     const defaultSkills = [
-      ".NET", ".NET Core", "3ds Max", "Adobe After Effects", "Adobe Photoshop", "Amazon EC2", "Amazon ECS",
-      "Analysis skills", "Angular", "APIs", "ArcGIS", "ASP.NET Core", "AutoCAD", "AWS", "AWS Lambda", "Azure",
-      "Back-end development", "CAD", "Civil 3D", "Construction", "CSS", "Data collection", "Data management",
-      "Database administration", "Databases", "Docker", "Environmental consulting", "Environmental permitting",
-      "GIS", "Git", "GitHub", "Go", "Google Cloud Platform", "HTML", "Java", "JavaScript", "Kubernetes", "Linux",
-      "MicroStation", "Microsoft Excel", "Microsoft Outlook", "Microsoft Powerpoint", "Microsoft Word",
-      "MySQL", "Node.js", "Oracle", "PostgreSQL", "Python", "React", "Revit", "SQL", "Terraform", "TypeScript",
-      "Vue.js", "Web services", "WebSocket", "XML"
+      "ArcGIS", "AutoCAD", "Python", "AWS", "PostgreSQL", "JavaScript", "SQL", "React", "Docker", "Git"
     ];
 
     const highPriorityKeywords = ["gis", "environmental", "utilities", "pipelines", "energy"];
 
-    function prioritizeSkillsBasedOnJob(jobDescription) {
+    function prioritizeSkillsBasedOnJob(description) {
       return defaultSkills.sort((a, b) => {
-        const indexA = jobDescription.indexOf(a.toLowerCase());
-        const indexB = jobDescription.indexOf(b.toLowerCase());
-        const isHighPriorityA = highPriorityKeywords.some(keyword => jobDescription.includes(keyword) && a.toLowerCase().includes(keyword));
-        const isHighPriorityB = highPriorityKeywords.some(keyword => jobDescription.includes(keyword) && b.toLowerCase().includes(keyword));
+        const indexA = description.indexOf(a.toLowerCase());
+        const indexB = description.indexOf(b.toLowerCase());
+        const priorityA = highPriorityKeywords.some(keyword => description.includes(keyword) && a.toLowerCase().includes(keyword));
+        const priorityB = highPriorityKeywords.some(keyword => description.includes(keyword) && b.toLowerCase().includes(keyword));
 
-        if (isHighPriorityA && !isHighPriorityB) return -1;
-        if (!isHighPriorityA && isHighPriorityB) return 1;
-
+        if (priorityA && !priorityB) return -1;
+        if (!priorityA && priorityB) return 1;
         return (indexA === -1 ? Infinity : indexA) - (indexB === -1 ? Infinity : indexB);
       }).slice(0, 10);
     }
 
-    function generateTailoredParagraph(jobDescription, position, formattedSkills) {
-      if (jobDescription.includes('gis')) {
-        return `With extensive experience in GIS technologies, I bring expertise in ${formattedSkills}. My background aligns perfectly with the requirements of the ${position} role.`;
-      } else if (highPriorityKeywords.some(keyword => jobDescription.includes(keyword))) {
-        return `My work in sectors such as energy and environmental projects has equipped me with strong skills in ${formattedSkills}. I am eager to leverage this experience in the ${position} position.`;
+    function generateTailoredParagraph(description, position, skills) {
+      if (description.includes('gis')) {
+        return `With extensive experience in GIS technologies, I bring expertise in ${skills}. I am confident that my background aligns perfectly with the requirements of the ${position} role.`;
+      } else if (highPriorityKeywords.some(keyword => description.includes(keyword))) {
+        return `Having worked on various environmental and infrastructure projects, I possess strong skills in ${skills}, making me an excellent fit for the ${position} position.`;
       }
-
-      return `I am applying for the ${position} role with a solid background in software and technology. My experience with ${formattedSkills} enables me to effectively meet the job's technical requirements.`;
+      return `I am applying for the ${position} role with a versatile background in technology and data management, leveraging my expertise in ${skills}.`;
     }
   </script>
 </body>

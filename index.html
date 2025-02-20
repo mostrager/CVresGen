@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Resume & Cover Letter Generator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; max-width: 800px; }
     label, input, button, select { display: block; margin: 10px 0; width: 100%; }
@@ -23,13 +24,24 @@
 
   <button onclick="generateDocuments()">Generate Cover Letter</button>
 
-  <h2>Resume (Static)</h2>
-  <a href="Michael_Ostrager_Resume.pdf" download>Download Resume</a>
+  <h2>Resume (Editable)</h2>
+  <textarea id="resumeText">MICHAEL OSTRAGER
+
+GIS Specialist | Analyst
+New York, NY 12866 | 1-(917)-573-1443 | michael.ostrager@gmail.com | LinkedIn
+
+QUALIFICATIONS SUMMARY
+Dynamic and results-driven professional with valuable experience in overseeing spatial analysis and geographic data management...</textarea>
+  <div class="download-container">
+    <a id="downloadResumeLink" onclick="downloadResume()" style="text-decoration: none;">
+      <button>Download Resume</button>
+    </a>
+  </div>
 
   <h2>Cover Letter</h2>
   <textarea id="coverLetterText" readonly></textarea>
   <div class="download-container">
-    <button onclick="downloadFile()">Download Cover Letter</button>
+    <button onclick="downloadFile()">Download CV</button>
     <select id="fileFormat">
       <option value="docx" selected>.docx</option>
       <option value="pdf">.pdf</option>
@@ -40,7 +52,9 @@
   </div>
 
   <script>
-    const coverLetterTemplate = `MICHAEL OSTRAGER\n\nGIS Specialist | Analyst\nNew York, NY 12866 | 1-(917)-573-1443 | michael.ostrager@gmail.com | LinkedIn\n\n{{date}}\n\n{{employer}},\n\nDear Hiring Manager,\n\nAs a focused professional, I possess progressive experience in spatial analysis, geospatial data management, environmental compliance, technical project management, and risk analysis and mitigation. I have a proven record of leading the management of complex data sets to support environmental permitting and infrastructure projects. After reading your requirements for the {{position}} position, I am confident in my abilities and experiences to excel in this capacity.\n\nAs a GIS Specialist/Environmental Scientist, I oversaw the administration of geospatial databases, improving field data collection, processing, and visualization for major environmental and building permits. I am skilled at creating crucial geospatial engineering reports and working with the US Army Corps of Engineers to ensure project submissions fulfill strict regulatory requirements. This experience has sharpened my ability to manage complicated datasets and apply GIS technologies to support environmental mitigation and industrial initiatives.\n\nThank you for your time and consideration. I am confident that my talents and expertise align with the requirements of this position, and I look forward to exploring how I can contribute to your organization.\n\nSincerely,\nMichael Ostrager`;
+    const { jsPDF } = window.jspdf;
+
+    const coverLetterTemplate = `MICHAEL OSTRAGER\n\nGIS Specialist | Analyst\nNew York, NY 12866 | 1-(917)-573-1443 | michael.ostrager@gmail.com | LinkedIn\n\n{{date}}\n\n{{employer}},\n\nDear Hiring Manager,\n\nAs a focused professional, I possess progressive experience in spatial analysis, geospatial data management, environmental compliance, technical project management, and risk analysis and mitigation. I have a proven record of leading the management of complex data sets to support environmental permitting and infrastructure projects. After reading your requirements for the {{position}} position, I am confident in my abilities and experiences to excel in this capacity.\n\nThank you for your time and consideration. I look forward to exploring how I can contribute to your organization.\n\nSincerely,\nMichael Ostrager`;
 
     function generateDocuments() {
       const employer = document.getElementById('employer').value || 'Hiring Manager';
@@ -58,28 +72,36 @@
     function downloadFile() {
       const text = document.getElementById('coverLetterText').value;
       const format = document.getElementById('fileFormat').value;
-      let blob, mimeType, extension;
 
-      switch (format) {
-        case 'pdf':
-          alert('PDF conversion requires backend processing or a library like jsPDF.');
-          return;
-        case 'jpg':
-        case 'jpeg':
-          alert('Image conversion requires a canvas rendering process and is beyond static HTML capability.');
-          return;
-        case 'doc':
-        case 'docx':
-        default:
-          mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-          extension = format;
-          blob = new Blob([text], { type: mimeType });
-          break;
+      if (format === 'pdf') {
+        const doc = new jsPDF();
+        const lines = doc.splitTextToSize(text, 180);
+        doc.text(lines, 10, 10);
+        doc.save('Michael_Ostrager_Cover_Letter.pdf');
+      } else {
+        let mimeType;
+        switch (format) {
+          case 'doc':
+          case 'docx':
+            mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            break;
+          default:
+            mimeType = 'text/plain';
+        }
+        const blob = new Blob([text], { type: mimeType });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `Michael_Ostrager_Cover_Letter.${format}`;
+        link.click();
       }
+    }
 
+    function downloadResume() {
+      const resumeText = document.getElementById('resumeText').value;
+      const blob = new Blob([resumeText], { type: 'text/plain' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `Michael_Ostrager_Cover_Letter.${extension}`;
+      link.download = 'Michael_Ostrager_Resume.txt';
       link.click();
     }
   </script>
